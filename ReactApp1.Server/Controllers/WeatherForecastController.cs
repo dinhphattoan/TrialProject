@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using ReactApp1.Server.Model;
 
 namespace ReactApp1.Server.Controllers
 {

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
-namespace ReactApp1.Server.Attributes
+namespace ReactApp1.Server.Model.Attributes
 {
     public class PasswordComplexityAttribute : ValidationAttribute
     {
