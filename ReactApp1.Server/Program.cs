@@ -15,7 +15,7 @@ builder.Services.AddDbContext<ClientOrderDbContext>(configurations =>
 });
 builder.Services.AddApiVersioning(config =>
 {
-    config.DefaultApiVersion = new ApiVersion(1,0);
+    config.DefaultApiVersion = new ApiVersion(1, 0);
     config.AssumeDefaultVersionWhenUnspecified = true;
     config.ReportApiVersions = true;
     config.ApiVersionReader = new UrlSegmentApiVersionReader();
@@ -24,9 +24,9 @@ builder.Services.AddApiVersioning(config =>
     );
 var app = builder.Build();
 
+app.UseAntiforgery();
 app.UseDefaultFiles();
 app.UseStaticFiles();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

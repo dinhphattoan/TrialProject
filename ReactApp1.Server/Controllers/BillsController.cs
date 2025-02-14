@@ -34,7 +34,7 @@ namespace ReactApp1.Server.Controllers
         {
             var bill = await _context.Bill.FindAsync(id);
 
-            if (bill == null)
+            if (bill is null)
             {
                 return NotFound();
             }
