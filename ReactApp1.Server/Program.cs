@@ -27,6 +27,8 @@ builder.Services.AddDbContext<ClientOrderDbContext>(configurations =>
 {
     configurations.UseSqlServer(builder.Configuration.GetConnectionString("DefaultString"));
 });
+
+
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
     options.Password.RequireDigit = true;
@@ -38,6 +40,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 })
     .AddEntityFrameworkStores<ClientOrderDbContext>()
     .AddDefaultTokenProviders();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -47,7 +50,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"]
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            SaveSigninToken = true
         };
     });
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
@@ -61,10 +65,9 @@ builder.Services.AddApiVersioning(config =>
 
 }
     );
-
 var app = builder.Build();
 
-
+await SeedData.InitializeUserRole(app.Services);
 app.UseDefaultFiles();
 app.UseStaticFiles();
 // Configure the HTTP request pipeline.

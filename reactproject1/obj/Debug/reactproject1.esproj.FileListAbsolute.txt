@@ -1,1 +1,2 @@
 C:\Users\toan.dinh\source\repos\ReactApp1\reactproject1\obj\Debug\reactproject1.esproj.CoreCompileInputs.cache
+C:\Users\toan.dinh\source\repos\ReactApp1\reactproject1\dist\libman.json

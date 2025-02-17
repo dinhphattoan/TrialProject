@@ -1,9 +1,11 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReactApp1.Server.Model;
 
 namespace ReactApp1.Server.Controllers
 {
+    [Authorize]
     [ApiController]
     [ApiVersion(1)]
     [ApiVersion(2)]
@@ -16,7 +18,6 @@ namespace ReactApp1.Server.Controllers
         };
 
         private readonly ILogger<WeatherForecastController> _logger;
-
         public WeatherForecastController(ILogger<WeatherForecastController> logger)
         {
             _logger = logger;
@@ -24,17 +25,18 @@ namespace ReactApp1.Server.Controllers
 
         [HttpGet(Name = "GetWeatherForecast")]
         [MapToApiVersion(1)]
-        public IEnumerable<WeatherForecast> Get()
+        [Authorize (Roles = "User")]
+        public IEnumerable<WeatherForecast> GetAllWeatherForecastsAsync()
         {
             var requestedVersion = HttpContext.GetRequestedApiVersion();
             _logger.LogInformation($"Requested API Version: {requestedVersion}"); // Log the version
+            
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {
                 Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
                 TemperatureC = Random.Shared.Next(-20, 55),
                 Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-            })
-            .ToArray();
+            }).ToArray();
         }
     }
 }

@@ -4,16 +4,28 @@ using ReactApp1.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using ReactApp1.Server.DTO;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 namespace ReactApp1.Server.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
-    public class AccountsController(ClientOrderDbContext clientOrderDbContext, SignInManager<IdentityUser> signInManager, ILogger<AccountsController> logger, UserManager<IdentityUser> userManager) : ControllerBase
+    public class AccountsController(ClientOrderDbContext clientOrderDbContext, 
+        SignInManager<IdentityUser> signInManager,
+        ILogger<AccountsController> logger,
+        UserManager<IdentityUser> userManager, 
+        RoleManager<IdentityRole> roleManager,
+        IConfiguration configuration) : ControllerBase
     {
         private readonly SignInManager<IdentityUser> _signInManager = signInManager;
         private readonly ClientOrderDbContext _clientOrderDbContext = clientOrderDbContext;
         private readonly UserManager<IdentityUser> _userManager = userManager;
+        private readonly RoleManager<IdentityRole> _roleManager = roleManager;
         private readonly ILogger<AccountsController> _logger = logger;
+        private readonly IConfiguration _configuration = configuration;
         private readonly bool IS_PASSWORD_PERSISTENT = true;
 
         [HttpPost("login")]
@@ -35,20 +47,24 @@ namespace ReactApp1.Server.Controllers
 
             var signInResult = await _signInManager.PasswordSignInAsync(identityUserFind, identityUserDTO.Password, IS_PASSWORD_PERSISTENT, lockoutOnFailure: true);
 
-            if (signInResult.Succeeded)
-            {
-                return Ok(new { Message = "Signed in successfully." });
-            }
-            else if (signInResult.IsLockedOut)
+            if (signInResult.IsLockedOut)
             {
                 return Unauthorized(new { Message = "Your account is locked. Please try again later." });
             }
-            else if (signInResult.RequiresTwoFactor)
+            if (signInResult.RequiresTwoFactor)
             {
                 return Unauthorized(new { Message = "Two-factor authentication is required." });
             }
-
-            return Unauthorized(new { Message = "Invalid username or password." });
+            CookieOptions cookieOptions = new CookieOptions()
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTime.UtcNow.AddMinutes(10)
+            };
+            string token = GenerateToken(identityUserFind);
+            Response.Cookies.Append("jwt", token, cookieOptions);
+            return Ok(new { Message = "Signed in successfully." });
         }
 
         [Authorize]
@@ -92,25 +108,39 @@ namespace ReactApp1.Server.Controllers
             IdentityUser registerIdentityUser = new() { Email = identityUserDTO.Email, UserName = identityUserDTO.Username, };
             IdentityResult? registerResult = await _signInManager.UserManager.CreateAsync(registerIdentityUser, identityUserDTO.Password);
 
-            if (registerResult.Succeeded)
+            if (registerResult.Errors.Any())
             {
-                _logger.LogInformation($"New user {registerIdentityUser.UserName} registered with Email: {registerIdentityUser.Email}");
-                return CreatedAtAction(nameof(RegisterAccountAsync),new {id = registerIdentityUser.Id}
-                , new {Message = "User register successfully."});
+                List<string> errors = new List<string>();
+                foreach (var error in registerResult.Errors)
+                {
+                    errors.Add(error.Description);
+                }
+                _logger.LogError($"Failed to sign up with Username {registerIdentityUser.UserName}. Error:{string.Join(",", errors)}");
+                return BadRequest(new { Message = "User registration failed", Errors = errors });
             }
 
-            List<string> errors = new List<string>();
-            foreach (var error in registerResult.Errors)
+            _logger.LogInformation($"New user {registerIdentityUser.UserName} registered with Email: {registerIdentityUser.Email}");
+
+            IdentityResult newUserRoleResult = await _userManager.AddToRoleAsync(registerIdentityUser,"User");
+            if(newUserRoleResult.Errors.Any())
             {
-                errors.Add(error.Description);
+                List<string> errors = new List<string>();
+                foreach (var error in registerResult.Errors)
+                {
+                    errors.Add(error.Description);
+                }
+                _logger.LogError($"Failed to assign role to User with {registerIdentityUser.UserName}. Error:{string.Join(",", errors)}");
+                return BadRequest(new { Message = "User role assign failed", Errors = errors });
             }
-            _logger.LogError($"Failed to sign up with Username {registerIdentityUser.UserName}. Error:{string.Join(",", errors)}");
-            return BadRequest(new {Message = "User registration failed", Errors = errors});
+            return CreatedAtAction(nameof(RegisterAccountAsync), new { id = registerIdentityUser.Id }
+            , new { Message = $"User register successfully with Role 'User'." });
+
+
         }
 
 
         [HttpGet("GetAllAccounts")]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllAccounts()
         {
             try
@@ -131,26 +161,54 @@ namespace ReactApp1.Server.Controllers
                 return StatusCode(500, "An error occurred while retrieving account.");
             }
         }
-        //Restful
+
         [HttpGet("Account/{username}")]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetEmailFromUsernameAsync(string username)
         {
-            if(string.IsNullOrEmpty(username))
+            if (string.IsNullOrEmpty(username))
             {
                 return BadRequest(new { Message = "Username cannot be empty" });
             }
 
             IdentityUser? identityUserFind = await _userManager.Users.FirstOrDefaultAsync(p => p.UserName == username);
-            if(identityUserFind == null)
+            if (identityUserFind == null)
             {
                 return BadRequest(new { Message = "Account doesn't exist." });
             }
-            if(!identityUserFind.EmailConfirmed)
+            if (!identityUserFind.EmailConfirmed)
             {
                 return Unauthorized(new { Message = "Account Email isn't authorized" });
             }
-            return Ok(new { Username = username, Email = identityUserFind.Email});
+            return Ok(new { Username = username, Email = identityUserFind.Email });
+        }
+
+        private string GenerateToken(IdentityUser identityUser, IEnumerable<Claim>? additionalClaim = null)
+        {
+            if (identityUser ==null)
+            {
+                throw new ArgumentException(nameof(identityUser), "User cannot be null");
+            }
+            List<Claim> claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Jti , Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, identityUser.UserName)
+            };
+            if (additionalClaim != null)
+            {
+                claims.AddRange(additionalClaim);
+            }
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(30),
+                signingCredentials: creds);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
