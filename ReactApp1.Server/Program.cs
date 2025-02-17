@@ -29,7 +29,6 @@ builder.Services.AddDbContext<ClientOrderDbContext>(configurations =>
 });
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = true;
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;

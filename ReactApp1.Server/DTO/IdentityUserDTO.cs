@@ -1,4 +1,4 @@
-﻿namespace ReactApp1.Server.Model.DTO
+﻿namespace ReactApp1.Server.DTO
 {
     public class IdentityUserDTO
     {

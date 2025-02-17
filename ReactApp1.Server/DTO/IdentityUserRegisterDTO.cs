@@ -1,7 +1,7 @@
 ﻿using ReactApp1.Server.Model.Attributes;
 using System.ComponentModel.DataAnnotations;
 
-namespace ReactApp1.Server.Model.DTO
+namespace ReactApp1.Server.DTO
 {
     public class IdentityUserRegisterDTO
     {
