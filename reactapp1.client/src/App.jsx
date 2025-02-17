@@ -3,6 +3,7 @@ import './App.css';
 
 import Layout from './components/Layout';
 
+let API_BASE_URL = 'weatherforecast/api/v1'
 
 function App() {
     const [forecasts, setForecasts] = useState(undefined);
@@ -13,7 +14,7 @@ function App() {
         async function populateWeatherData() {
             setLoading(true);
             setError(null);
-            let API_BASE_URL = 'weatherforecast/api/v1'
+            
             try {
                 const response = await fetch(API_BASE_URL);
                 if (!response.ok) {

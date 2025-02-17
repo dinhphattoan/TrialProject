@@ -12,6 +12,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("TypeScriptReactPolicy", builder =>
+    {
+        builder.WithOrigins("http://localhost:49453")
+        .AllowAnyMethod()
+        .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddDbContext<ClientOrderDbContext>(configurations =>
 {
     configurations.UseSqlServer(builder.Configuration.GetConnectionString("DefaultString"));
@@ -64,6 +75,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 
 }
+app.UseCors("TypeScriptReactPolicy");
 app.UseHttpsRedirection();
 
 app.UseAuthentication();

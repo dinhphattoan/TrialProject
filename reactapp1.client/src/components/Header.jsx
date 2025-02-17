@@ -1,5 +1,5 @@
 import 'bootstrap/dist/css/bootstrap.css';
-function NavBar() {
+function NavBar() {let API_BASE_URL = 'weatherforecast/api/v1'
     return (
         <nav class="navbar navbar-expand-lg bg-primary" data-bs-theme="dark">
             <div class="container-fluid">

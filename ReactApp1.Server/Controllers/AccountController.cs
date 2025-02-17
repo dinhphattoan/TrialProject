@@ -12,6 +12,7 @@ namespace ReactApp1.Server.Controllers
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly ClientOrderDbContext _clientOrderDbContext;
         private readonly ILogger<AccountController> _logger;
+        private readonly bool _IS_PASSWORD_PERSISTEN = true;
         public AccountController(ClientOrderDbContext clientOrderDbContext, SignInManager<IdentityUser> signInManager, ILogger<AccountController> logger)
         {
             _signInManager = signInManager;
@@ -27,7 +28,7 @@ namespace ReactApp1.Server.Controllers
                 IdentityUser? identityUser = _clientOrderDbContext.Users.FindAsync(_clientOrderDbContext.Users.Where(user => user.UserName == identityUserDTO.Username).FirstOrDefault().Id).Result;
                 if (identityUser is not null)
                 {
-                    var identityResult = await _signInManager.CheckPasswordSignInAsync(identityUser, identityUserDTO.Password, false);
+                    var identityResult = await _signInManager.PasswordSignInAsync(identityUser, identityUserDTO.Password, _IS_PASSWORD_PERSISTEN, false);
                     if (identityResult.Succeeded)
                     {
                         return Ok(identityUser);
