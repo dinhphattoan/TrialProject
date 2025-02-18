@@ -5,7 +5,6 @@ using ReactApp1.Server.Model;
 
 namespace ReactApp1.Server.Controllers
 {
-    [Authorize]
     [ApiController]
     [ApiVersion(1)]
     [ApiVersion(2)]

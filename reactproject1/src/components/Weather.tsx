@@ -1,6 +1,7 @@
+import { Box } from "@mui/material";
 import React, { useEffect, useState } from "react";
 
-const API_BASE_URL = 'https://localhost:7121/WeatherForecast/api/v1'; 
+const API_BASE_URL = 'http://localhost:49453/WeatherForecast/api/v1'; 
 
 interface Weather {
     date: string;
@@ -80,7 +81,13 @@ function WeatherComponent() {
         <>
             <h1 id="tableLabel">Weather forecast</h1>
             <p>This component demonstrates fetching data from the server.</p>
-            {contents}
+            <Box sx={{
+                display: 'flex',
+                flexDirections: 'column',
+                justifyItems: 'center'
+            } }>
+                {contents}
+            </Box>
         </>
             
     );

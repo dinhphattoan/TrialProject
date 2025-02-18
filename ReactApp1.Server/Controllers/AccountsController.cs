@@ -13,10 +13,10 @@ namespace ReactApp1.Server.Controllers
     [ApiController]
     [Authorize]
     [Route("api/[controller]")]
-    public class AccountsController(ClientOrderDbContext clientOrderDbContext, 
+    public class AccountsController(ClientOrderDbContext clientOrderDbContext,
         SignInManager<IdentityUser> signInManager,
         ILogger<AccountsController> logger,
-        UserManager<IdentityUser> userManager, 
+        UserManager<IdentityUser> userManager,
         RoleManager<IdentityRole> roleManager,
         IConfiguration configuration) : ControllerBase
     {
@@ -55,16 +55,21 @@ namespace ReactApp1.Server.Controllers
             {
                 return Unauthorized(new { Message = "Two-factor authentication is required." });
             }
-            CookieOptions cookieOptions = new CookieOptions()
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTime.UtcNow.AddMinutes(10)
-            };
             string token = GenerateToken(identityUserFind);
-            Response.Cookies.Append("jwt", token, cookieOptions);
-            return Ok(new { Message = "Signed in successfully." });
+            return Ok(new { Message = "Signed in successfully.", token = token });
+        }
+
+
+        [HttpGet("authenticated")]
+        [AllowAnonymous]
+        public IActionResult IsLoggedIn()
+        {
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                string username = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+                return Ok(new { IsLoggedIn = true, Username = username });
+            }
+            return Ok(new { IsLoggedIn = false });
         }
 
         [Authorize]
@@ -121,8 +126,8 @@ namespace ReactApp1.Server.Controllers
 
             _logger.LogInformation($"New user {registerIdentityUser.UserName} registered with Email: {registerIdentityUser.Email}");
 
-            IdentityResult newUserRoleResult = await _userManager.AddToRoleAsync(registerIdentityUser,"User");
-            if(newUserRoleResult.Errors.Any())
+            IdentityResult newUserRoleResult = await _userManager.AddToRoleAsync(registerIdentityUser, "User");
+            if (newUserRoleResult.Errors.Any())
             {
                 List<string> errors = new List<string>();
                 foreach (var error in registerResult.Errors)
@@ -185,7 +190,7 @@ namespace ReactApp1.Server.Controllers
 
         private string GenerateToken(IdentityUser identityUser, IEnumerable<Claim>? additionalClaim = null)
         {
-            if (identityUser ==null)
+            if (identityUser == null)
             {
                 throw new ArgumentException(nameof(identityUser), "User cannot be null");
             }

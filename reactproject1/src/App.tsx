@@ -1,16 +1,14 @@
-import { useState } from 'react'
-import WeatherComponent from './components/Weather'
-import './App.css'
+import React from 'react';
+import Layout from './components/Layout';
+import { AppBar } from '@mui/material';
+import WeatherComponent from './components/Weather';
 
-function App() {
-  const [count, setCount] = useState(0)
+const App: React.FC = () => {
+    return (
+        <Layout>
+            <WeatherComponent/>
+        </Layout>
+    );
+};
 
-  return (
-    <>
-          <WeatherComponent />
-
-    </>
-  )
-}
-
-export default App
+export default App;
